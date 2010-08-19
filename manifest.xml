@@ -1,0 +1,16 @@
+<package>
+  <description brief="A generic driver for digital cameras based on gphoto2"></description>
+  <author>Benjamin Pitzer</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="opencv2"/>
+  <depend package="self_test"/>
+  <export>
+    <cpp cflags="-I${prefix}/include -I${prefix}/srv/cpp" lflags="-L${prefix}/lib"/>
+  </export>
+  <rosdep name="libgphoto"/>
+</package>
+
