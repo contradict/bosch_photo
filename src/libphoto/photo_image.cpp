@@ -74,42 +74,43 @@ void photo_image_set_size(photo_image_p image, int image_width, int image_height
 int photo_image_read(photo_image_p image, const char *filename)
 {
   int r,c,n=0;
-  IplImage* img = cvLoadImage(filename,1);
-  if(!img) return 0;
-  int w = img->width;
-  int h = img->height;
+  cv::Mat img = cv::imread(filename);
+  if(img.empty()) return false;
+  int w = img.cols;
+  int h = img.rows;
   if(image->width!=w || image->height!=h)
     photo_image_set_size(image, w, h);
   char* data = image->data;
   for(r=0;r<h;++r) {
     for(c=0;c<w;++c) {
-      data[n] = ((unsigned char *)(img->imageData + r*img->widthStep))[c*img->nChannels + 2]; ++n; // R
-      data[n] = ((unsigned char *)(img->imageData + r*img->widthStep))[c*img->nChannels + 1]; ++n; // G
-      data[n] = ((unsigned char *)(img->imageData + r*img->widthStep))[c*img->nChannels + 0]; ++n; // B
+      const cv::Vec3b& pixel = img.at<cv::Vec3b> (r, c);
+      unsigned char R = pixel[2]; // R
+      unsigned char G = pixel[1]; // G
+      unsigned char B = pixel[0]; // B
+      data[n] = R; ++n; // R
+      data[n] = G; ++n; // G
+      data[n] = B; ++n; // B
     }
   }
-  cvReleaseImage(&img);
   return 1;
 }
 
 int photo_image_write(photo_image_p image, const char *filename)
 {
-  int res, r,c,n=0;
+  int r,c,n=0;
   int w = image->width;
   int h = image->height;
 
-  CvSize size = {w,h};
-  IplImage* img = cvCreateImage(size,IPL_DEPTH_8U,3);
+  cv::Mat img (h, w, CV_8UC3);
   char* data = image->data;
   for(r=0;r<h;++r) {
     for(c=0;c<w;++c) {
-       ((unsigned char *)(img->imageData + r*img->widthStep))[c*img->nChannels + 2] = data[n]; n++; // R
-       ((unsigned char *)(img->imageData + r*img->widthStep))[c*img->nChannels + 1] = data[n]; n++; // G
-       ((unsigned char *)(img->imageData + r*img->widthStep))[c*img->nChannels + 0] = data[n]; n++; // B
+      img.at<unsigned char> (r, 3*c+2) = data[n]; n++; // R
+      img.at<unsigned char> (r, 3*c+1) = data[n]; n++; // G
+      img.at<unsigned char> (r, 3*c) = data[n]; n++; // B
     }
   }
-  res = cvSaveImage(filename, img);
-  cvReleaseImage(&img);
+  cv::imwrite(filename, img);
   return 1;
 }
 
