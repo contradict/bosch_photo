@@ -33,8 +33,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *********************************************************************/
-#include <opencv/cv.h>
-#include <opencv/highgui.h> //for cvLoadImage()
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <photo/photo_image.h>
 
 photo_image_p photo_image_initialize()
