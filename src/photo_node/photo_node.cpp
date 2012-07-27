@@ -47,6 +47,9 @@ class PhotoNode
 public:
   photo_p photo_;
   photo_image_p photo_image_;
+
+  //photo_camera camera_;
+
   boost::mutex photo_mutex_ ;
 
   ros::ServiceServer set_config_srv_;
