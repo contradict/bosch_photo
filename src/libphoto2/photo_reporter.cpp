@@ -33,47 +33,44 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *********************************************************************/
-#ifndef __PHOTO_IMAGE__
-#define __PHOTO_IMAGE__
 
 
-class photo_image
+photo_reporter::photo_reporter( void )
 {
+}
+photo_reporter::~photo_reporter( void )
+{
+}
 
-private:
-  int width_;
-  int height_;
-  size_t bytes_per_pixel_;
-  size_t image_size_;
-  char* data_;
 
-public:
+static void photo_reporter::contextError( GPContext *context, const char *format, va_list args, void *data )
+{
+  char error_string[1024]; // Maximum size of error message.
 
-  photo_image( void );
-  ~photo_image( void );
+  vsnprintf( error_string, 1024, format, args );
+  //va_end( args );
 
-  //* initializes a photo image
-  //photo_image_p photo_image_initialize();
+  std::cerr << std::endl << "photo_reporter: Context error " << std::endl
+	    << error_string << std::endl;
+}
 
-  //* frees a photo image
-  //void photo_image_free(photo_image_p image);
+static void photo_reporter::contextStatus( GPContext *context, const char *format, va_list args, void *data )
+{
+  char status_string[1024]; // Maximum size of status message.
 
-  //* sets size and allocates memory for image data
-  void photo_image_set_size( int image_width, int image_height, size_t image_bytes_per_pixel );
+  vsnprintf( status_string, 1024, format, args );
+  //va_end( args );
 
-  //* Read an image from filesystem
-  /*
-   * This function is a debugging function for use replacing photo_image acquisition using a photo_camera.
-   * It can only read 24-bit RGB images via OpenCV. It may be extended to handle grayscale and alpha channels in the future.
-   */
-  bool photo_image_read( const std::string filename );
+  std::cout << "photo_reporter: Status " << status_string << std::endl;
+}
 
-  //* Write a photo_image to filesystem
-  /*
-   * This function is a debugging function for use replacing photo_image acquisition using a photo_camera.
-   * It can only write 24-bit RGB images via OpenCV. It may be extended to handle grayscale and alpha channels in the future.
-   */
-  bool photo_image_write( const std::string filename );
-};
+static void photo_reporter::error( std::string function_name )
+{
+  std::cerr << "photo_reporter: Error executing function '" << function name << "'." << std::endl;
+}
 
-#endif // __PHOTO_IMAGE__
+static void photo_reporter::error( std::string function_name, std::string additional_message )
+{
+  photo_reporter_error_reporter( function_name );
+  std::cerr << additional_message << std::endl;
+}

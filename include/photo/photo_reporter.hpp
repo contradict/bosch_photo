@@ -33,47 +33,25 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *********************************************************************/
-#ifndef __PHOTO_IMAGE__
-#define __PHOTO_IMAGE__
+#ifndef __PHOTO_REPORTER__
+#define __PHOTO_REPORTER__
 
+#include <string>
+#include <iostream>
+#include <gphoto2/gphoto2-context.h>
 
-class photo_image
+class photo_reporter
 {
-
 private:
-  int width_;
-  int height_;
-  size_t bytes_per_pixel_;
-  size_t image_size_;
-  char* data_;
+  photo_reporter();
+  ~photo_reporter();
 
 public:
+  static void contextError( GPContext* context, const char* format, va_list args, void* data );
+  static void contextStatus( GPContext* context, const char* format, va_list args, void* data );
+  static void error( std::string function_name );
+  static void error( std::string function_name, std::string additional_message );
 
-  photo_image( void );
-  ~photo_image( void );
-
-  //* initializes a photo image
-  //photo_image_p photo_image_initialize();
-
-  //* frees a photo image
-  //void photo_image_free(photo_image_p image);
-
-  //* sets size and allocates memory for image data
-  void photo_image_set_size( int image_width, int image_height, size_t image_bytes_per_pixel );
-
-  //* Read an image from filesystem
-  /*
-   * This function is a debugging function for use replacing photo_image acquisition using a photo_camera.
-   * It can only read 24-bit RGB images via OpenCV. It may be extended to handle grayscale and alpha channels in the future.
-   */
-  bool photo_image_read( const std::string filename );
-
-  //* Write a photo_image to filesystem
-  /*
-   * This function is a debugging function for use replacing photo_image acquisition using a photo_camera.
-   * It can only write 24-bit RGB images via OpenCV. It may be extended to handle grayscale and alpha channels in the future.
-   */
-  bool photo_image_write( const std::string filename );
 };
 
-#endif // __PHOTO_IMAGE__
+#endif //__PHOTO_REPORTER__

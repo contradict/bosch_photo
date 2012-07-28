@@ -33,47 +33,47 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *********************************************************************/
-#ifndef __PHOTO_IMAGE__
-#define __PHOTO_IMAGE__
+#ifndef __PHOTO_CAMERA_LIST__
+#define __PHOTO_CAMERA_LIST__
 
+#include <string>
 
-class photo_image
+#include <gphoto2/gphoto2-camera.h>
+#include <gphoto2/gphoto2-setting.h>
+#include <gphoto2/gphoto2-filesys.h>
+
+class photo_camera_list
 {
 
 private:
-  int width_;
-  int height_;
-  size_t bytes_per_pixel_;
-  size_t image_size_;
-  char* data_;
+  CameraList* camera_list_;
+  GPPortInfoList* port_info_list_;
+  CameraAbilitiesList* abilities_list_;
 
 public:
+  photo_camera_list( void );
+  ~photo_camera_list( void );
 
-  photo_image( void );
-  ~photo_image( void );
+  CameraList* getCameraList( void );
+  GPPortInfoList* getPortInfoList( void );
+  CameraAbilitiesList* getAbilitiesList( void );
 
-  //* initializes a photo image
-  //photo_image_p photo_image_initialize();
+  bool filterCameraList( GPContext* context, const std::string match_string );
 
-  //* frees a photo image
-  //void photo_image_free(photo_image_p image);
 
-  //* sets size and allocates memory for image data
-  void photo_image_set_size( int image_width, int image_height, size_t image_bytes_per_pixel );
+  //* Autodetect all photo_cameras connected to the system
+  bool autodetect( GPContext* context );
 
-  //* Read an image from filesystem
-  /*
-   * This function is a debugging function for use replacing photo_image acquisition using a photo_camera.
-   * It can only read 24-bit RGB images via OpenCV. It may be extended to handle grayscale and alpha channels in the future.
-   */
-  bool photo_image_read( const std::string filename );
+  bool loadPortInfo( ssize_t* port_count );
+  bool loadAbilities( GPContext* context );
 
-  //* Write a photo_image to filesystem
-  /*
-   * This function is a debugging function for use replacing photo_image acquisition using a photo_camera.
-   * It can only write 24-bit RGB images via OpenCV. It may be extended to handle grayscale and alpha channels in the future.
-   */
-  bool photo_image_write( const std::string filename );
+  //* Look up the port information for the port 'port_name'
+  bool lookupPortInfo( const std::string port_name, GPPortInfo* port_info );
+  //* Look up abilities for the camera model 'model_name'
+  bool lookupAbilities( const std::string model_name, CameraAbilities* abilities );
+
+
+
 };
 
-#endif // __PHOTO_IMAGE__
+#endif // __PHOTO_CAMERA_LIST__

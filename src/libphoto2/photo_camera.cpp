@@ -35,8 +35,8 @@
  *********************************************************************/
 
 #include <cstring>
-#include <>
-#include <gphoto2/gphoto2-port-log.h>
+
+#include "photo/photo_reporter.hpp"
 
 #include "photo/photo_camera.hpp"
 
@@ -44,48 +44,18 @@
 photo_camera::photo_camera( void ) :
   camera_(NULL),
   context_(NULL),
-  mode_(DIRECT),
-  
+  mode_(DIRECT)
 {
+  //port_info_(NULL);
+  //abilities_(NULL);
 }
 
 photo_camera::~photo_camera( void )
 {
-  delete camera_;
-  delete context_;
+  gp_camera_unref( camera_ ); //delete camera_;
+  gp_context_unref( context_ ); //delete context_;
 }
 
-static void photo_camera::context_error_reporter( GPContext *context, const char *format, va_list args, void *data )
-{
-  char error_string[1024]; // Maximum size of error message.
-
-  vsnprintf( error_string, 1024, format, args );
-  //va_end( args );
-
-  std::cerr << std::endl << "photo_camera: Context error " << std::endl
-	    << error_string << std::endl;
-}
-
-static void photo_camera::context_status_reporter( GPContext *context, const char *format, va_list args, void *data )
-{
-  char status_string[1024]; // Maximum size of status message.
-
-  vsnprintf( status_string, 1024, format, args );
-  //va_end( args );
-
-  std::cerr << "photo_camera: Status " << status_string << std::endl;
-}
-
-static void photo_camera::photo_camera_error_reporter( std::string function_name )
-{
-  std::cerr << "photo_camera: Error executing function '" << function name << "'." << std::endl;
-}
-
-static void photo_camera::photo_camera_error_reporter( std::string function_name, std::string additional_message )
-{
-  photo_camera_error_reporter( function_name );
-  std::cerr << additional_message << std::endl;
-}
 
 
 GPContext* photo_camera::photo_camera_create_context( void )
@@ -95,13 +65,11 @@ GPContext* photo_camera::photo_camera_create_context( void )
   context = gp_context_new();
 
   // Optional debugging and status output
-  gp_context_set_error_func( context, context_error_reporter, NULL );
-  gp_context_set_status_func( context, context_status_reporter, NULL );
+  gp_context_set_error_func( context, photo_reporter::contextError, NULL );
+  gp_context_set_status_func( context, photo_reporter::contextStatus, NULL );
 
   return context;
 }
-
-
 
 
 
@@ -113,7 +81,7 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string
   // Create new camera
   if( gp_camera_new( &camera_ ) != GP_OK )
   {
-    photo_camera_error_reporter( "gp_camera_new()" );
+    photo_reporter::error( "gp_camera_new()" );
     return false;
   }
 
@@ -123,7 +91,7 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string
     // Set the camera's abilities
     if( gp_camera_set_abilities( *camera_, abilities_ ) != GP_OK )
     {
-      photo_camera_error_reporter( "gp_camera_set_abilities()" );
+      photo_reporter::error( "gp_camera_set_abilities()" );
       return false;
     }
   }
@@ -137,7 +105,7 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string
   {
     if( gp_camera_set_port_info( *camera_, port_info_ ) != GP_OK )
     {
-      photo_camera_error_reporter( "gp_camera_set_port_info()" );
+      photo_reporter::error( "gp_camera_set_port_info()" );
       return false;
     }
   }
@@ -161,7 +129,7 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, size_t n )
  
   if( photo_camera_open( name, value, list->getPortInfoList(), list->getAbilitiesList() ) == false )
   {
-    photo_camera_error_reporter( "photo_camera_open()" );
+    photo_reporter::error( "photo_camera_open()" );
     return false;
   }
   return true;
@@ -172,7 +140,7 @@ bool photo_camera::photo_camera_close( void )
 {
   if( gp_camera_exit( camera_, context_ ) != GP_OK )
   {
-    photo_camera_error_reporter( "gp_camera_exit()", "Could not close photo_camera.");
+    photo_reporter::error( "gp_camera_exit()", "Could not close photo_camera.");
     return false;
   }
   return true;
@@ -189,7 +157,7 @@ static int photo_camera::photo_camera_find_widget_by_name( std::string name, Cam
   error_code = gp_camera_get_config( camera_, root, context_ );
   if (error_code != GP_OK)
   {
-    photo_camera_error_reporter( "gp_camera_get_config()");
+    photo_reporter::error( "gp_camera_get_config()");
     return error_code;
   }
 
@@ -299,14 +267,14 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
   // Locate the widget that corresponds to this parameter
   if( photo_camera_find_widget_by_name( param, &child, &root ) != GP_OK )
   {
-    photo_camera_error_reporter( "photo_camera_find_widget_by_name()");
+    photo_reporter::error( "photo_camera_find_widget_by_name()");
     return false;
   }
 
   // Get the widget label
   if( gp_widget_get_label(child, &label) != GP_OK )
   {
-    photo_camera_error_reporter( "gp_widget_get_label()");
+    photo_reporter::error( "gp_widget_get_label()");
     gp_widget_free( root );
     return false;
   }
@@ -314,7 +282,7 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
   // Get the widget type
   if( gp_widget_get_type( child, &type ) != GP_OK )
   {
-    photo_camera_error_reporter( "gp_widget_get_type()");
+    photo_reporter::error( "gp_widget_get_type()");
     gp_widget_free( root );
     return false;
   }
@@ -325,7 +293,7 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
   case GP_WIDGET_TEXT: // char*
     if( gp_widget_set_value(child, value.c_str()) != GP_OK )
     {
-      photo_camera_error_reporter( "gp_widget_set_value()");
+      photo_reporter::error( "gp_widget_set_value()");
       gp_context_error( context_, "Failed to set the value of text widget %s to %s.", param.c_str(), value.c_str() );
       gp_widget_free( root );
       return false;
@@ -337,7 +305,7 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
 
     if( gp_widget_get_range( child, &b, &t, &s) != GP_OK )
     {
-      photo_camera_error_reporter( "gp_widget_get_range()" );
+      photo_reporter::error( "gp_widget_get_range()" );
       gp_widget_free( root );
       return false;
     }
@@ -355,7 +323,7 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
     }
     if( gp_widget_set_value( child, &f ) != GP_OK )
     {
-      photo_camera_error_reporter( "gp_widget_set_value()" );
+      photo_reporter::error( "gp_widget_set_value()" );
       gp_context_error( context_, "Failed to set the value of range widget %s to %f.", param.c_str(), f );
       gp_widget_free( root );
       return false;
@@ -372,7 +340,7 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
     }
     if( gp_widget_set_value( child, &tog ) != GP_OK )
     {
-      photo_camera_error_reporter( "gp_widget_set_value()" );
+      photo_reporter::error( "gp_widget_set_value()" );
       gp_context_error( context_, "Failed to set values %s of toggle widget %s.", value.c_str(), param.c_str() );
       gp_widget_free( root );
       return false;
@@ -400,7 +368,7 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
     }
     if( gp_widget_set_value(child, &t) != GP_OK )
     {
-      photo_camera_error_reporter( "gp_widget_set_value()" );
+      photo_reporter::error( "gp_widget_set_value()" );
       gp_context_error( context_, "Failed to set new time of date/time widget %s to %s.", param.c_str(), value.c_str());
       gp_widget_free( root );
       return false;
@@ -413,7 +381,7 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
     count = gp_widget_count_choices( child );
     if( count < GP_OK )
     {
-      photo_camera_error_reporter( "gp_widget_count_choices()" );
+      photo_reporter::error( "gp_widget_count_choices()" );
       gp_widget_free( root );
       return false;
     }
@@ -465,7 +433,7 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
   // Configuration parameters are correct, so set the camera
   if( gp_camera_set_config( camera_, root, context_ ) != GP_OK )
   {
-    photo_camera_error_reporter( "gp_camera_set_config()" );
+    photo_reporter::error( "gp_camera_set_config()" );
     gp_context_error( context_, "Failed to set new configuration value %s for configuration entry %s.", value.c_str(), param.c_str() );
     gp_widget_free( root );
     return false;
@@ -487,14 +455,14 @@ bool photo_get_config( std::string param, char **value)
   // Locate the widget that corresponds to this parameter
   if( photo_camera_find_widget_by_name( param, &child, &root ) != GP_OK )
   {
-    photo_camera_error_reporter( "photo_camera_find_widget_by_name()");
+    photo_reporter::error( "photo_camera_find_widget_by_name()");
     return false;
   }
 
   // Get the widget label
   if( gp_widget_get_label(child, &label) != GP_OK )
   {
-    photo_camera_error_reporter( "gp_widget_get_label()");
+    photo_reporter::error( "gp_widget_get_label()");
     gp_widget_free( root );
     return false;
   }
@@ -502,7 +470,7 @@ bool photo_get_config( std::string param, char **value)
   // Get the widget type
   if( gp_widget_get_type( child, &type ) != GP_OK )
   {
-    photo_camera_error_reporter( "gp_widget_get_type()");
+    photo_reporter::error( "gp_widget_get_type()");
     gp_widget_free( root );
     return false;
   }
@@ -593,7 +561,7 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
   error_code = gp_camera_capture( camera_, GP_CAPTURE_IMAGE, &photo_file_path, context_ );
   if( error_code < GP_OK )
   {
-    photo_camera_error_reporter( "gp_camera_capture()" );
+    photo_reporter::error( "gp_camera_capture()" );
     gp_context_error( context_, "Could not capture image  (error code %d)\n", error_code );
     return false;
   }
@@ -602,7 +570,7 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
   error_code = gp_file_new_from_fd( &photofile, fd );
   if( error_code < GP_OK )
   {
-    photo_camera_error_reporter( "gp_file_new_from_fd()" );
+    photo_reporter::error( "gp_file_new_from_fd()" );
     gp_context_error( context_, "Could not create a new image file from %s%s (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
     gp_file_free( photofile );
     return false;
@@ -611,7 +579,7 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
   error_code = gp_camera_file_get( camera_, photo_file_path.folder, photo_file_path.name, GP_FILE_TYPE_NORMAL, photofile, context_ );
   if( error_code < GP_OK )
   {
-    photo_camera_error_reporter( "gp_camera_file_get()" );
+    photo_reporter::error( "gp_camera_file_get()" );
     gp_context_error( context_, "Could not get file %s%s (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
     gp_file_free( photofile );
     return false;
@@ -620,7 +588,7 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
   error_code = gp_camera_file_delete( camera_, photo_file_path.folder, photo_file_path.name, context_ );
   if( error_code < GP_OK )
   {
-    photo_camera_error_reporter( "gp_camera_file_delete()" );
+    photo_reporter::error( "gp_camera_file_delete()" );
     gp_context_error( context_, "Could delete file %s%s  (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
     gp_file_free( photofile );
     return false;
@@ -645,7 +613,7 @@ bool photo_camera::photo_camera_capture( photo_image image )
   error_code = gp_camera_capture( camera_, GP_CAPTURE_IMAGE, &photo_file_path, context_ );
   if( error_code < GP_OK )
   {
-    photo_camera_error_reporter( "gp_camera_capture()" );
+    photo_reporter::error( "gp_camera_capture()" );
     gp_context_error( context_, "Could not capture image  (error code %d)\n", error_code );
     return false;
   }
@@ -659,7 +627,7 @@ bool photo_camera::photo_camera_capture( photo_image image )
     close( fd );
     unlink( tmpname );
 
-    photo_camera_error_reporter( "gp_file_new_from_fd()" );
+    photo_reporter::error( "gp_file_new_from_fd()" );
     gp_context_error( context_, "Could not create a new image file from %s%s (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
     gp_file_free( photofile );
     return false;
@@ -671,7 +639,7 @@ bool photo_camera::photo_camera_capture( photo_image image )
   {
     gp_file_unref( photofile );
     unlink( tmpname );
-    photo_camera_error_reporter( "gp_camera_file_get()" );
+    photo_reporter::error( "gp_camera_file_get()" );
     gp_context_error( context_, "Could not get file %s%s (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
     return false;
   }
@@ -680,7 +648,7 @@ bool photo_camera::photo_camera_capture( photo_image image )
   if( error_code < GP_OK )
   {
     unlink( tmpname );
-    photo_camera_error_reporter( "gp_camera_file_delete()" );
+    photo_reporter::error( "gp_camera_file_delete()" );
     gp_context_error( context_, "Could delete file %s%s  (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
     gp_file_free( photofile );
     return false

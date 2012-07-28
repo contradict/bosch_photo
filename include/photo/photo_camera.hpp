@@ -38,76 +38,69 @@
 
 
 #include <gphoto2/gphoto2-camera.h>
+#include <gphoto2/gphoto2-context.h>
 #include <gphoto2/gphoto2-setting.h>
 #include <gphoto2/gphoto2-filesys.h>
 
+
+#include "photo/photo_camera_list.hpp"
+#include "photo/photo_image.hpp"
 
 class photo_camera
 {
 
 public:
-  enum photo_mode = { DIRECT = 0, TO_FILE = 1 }
+  enum photo_mode { DIRECT = 0, TO_FILE = 1 };
 
 private:
-  enum photo_mode mode_;
   Camera* camera_;
-  CameraList* camera_list_;
-  CameraAbilities abilities_;
-  CameraAbilitiesList* abilities_list_;
   GPContext *context_;
   GPPortInfo port_info_;
-  GPPortInfoList* port_info_list_;
+  CameraAbilities abilities_;
+  enum photo_mode mode_;
+
   
 public:
   
-  photo( void );
-  ~photo( void );
+  photo_camera( void );
+  ~photo_camera( void );
 
-  CameraList* photo_camera_get_camera_list( void );
+  //* Create a gphoto_camera context and set reporting functions
+  GPContext* photo_camera_create_context( void );
 
-  //* Autodetect all photo_cameras connected to the system
-  bool photo_camera_autodetect( CameraList* camera_list );
 
   //* Open the 'n'th photo_camera in the list
-  bool photo_camera_open_list( CameraList* camera_list, size_t n );
+  bool photo_camera_open( photo_camera_list* list, size_t n );
 
   //* Open a connection the photo_camera of 'model' on port 'port'.
-  bool photo_camera_open( const std::string model, std::string port );
+  bool photo_camera_open( photo_camera_list* list, const std::string model, std::string port );
   
   //* Close the photo_camera
   bool photo_camera_close( void );
   
+
   //* set a photo_camera parameter
-  int photo_camera_set_config(photo_camera_p photo_camera, const char *param, const char *value);
+  bool photo_camera_set_config( std::string param, std::string value );
   
   //* get a photo_camera parameter
-  int photo_camera_get_config(photo_camera_p photo_camera, const char *param, char **value);
+  bool photo_camera_get_config( std::string, char **value);
   
   //* capture an image
-  int photo_camera_capture(photo_camera_p photo_camera, photo_camera_image_p image);
+  int photo_camera_capture( photo_image image );
   
   //* capture an image to file
-  int photo_camera_capture_to_file(photo_camera_p photo_camera, const char *filename);
+  bool photo_camera_capture_to_file( std::string filename );
 
-private:
 
   static void context_error_reporter( GPContext* context, const char* format, va_list args, void* data );
   static void context_status_reporter( GPContext* context, const char* format, va_list args, void* data );
   static void photo_camera_error_reporter( std::string function_name );
   static void photo_camera_error_reporter( std::string function_name, std::string additional_message );
 
-  //* Create a gphoto_camera context and set reporting functions
-  GPContext* photo_camera_create_context( void );
+  static int photo_camera_find_widget_by_name( std::string param, CameraWidget **child, CameraWidget **rootconfig );
 
-  bool photo_camera_load_abilities( GPContext* context );
-  //* Look up abilities for the camera model 'model_name'
-  bool photo_camera_lookup_abilities( const std::string model_name );
-
-  bool photo_camera_load_port_info( size_t* port_count );
-  //* Look up the port information for the port 'port_name'
-  bool photo_camera_lookup_port_info( const std::string port_name );
-
-  bool photo_camera_filter_camera_list( CameraList* camera_list, GPContext* context, const std::string match_string );
+private:
+  bool photo_camera_check_toggle_value( std::string value_in, bool* value_out );
 };
 
 
