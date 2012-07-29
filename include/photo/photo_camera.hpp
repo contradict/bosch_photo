@@ -36,6 +36,7 @@
 #ifndef __PHOTO_CAMERA__
 #define __PHOTO_CAMERA__
 
+//#include <string>
 
 #include <gphoto2/gphoto2-camera.h>
 #include <gphoto2/gphoto2-context.h>
@@ -73,7 +74,7 @@ public:
   bool photo_camera_open( photo_camera_list* list, size_t n );
 
   //* Open a connection the photo_camera of 'model' on port 'port'.
-  bool photo_camera_open( photo_camera_list* list, const std::string model, std::string port );
+  bool photo_camera_open( photo_camera_list* list, const std::string model_name, std::string port_name );
   
   //* Close the photo_camera
   bool photo_camera_close( void );
@@ -83,25 +84,22 @@ public:
   bool photo_camera_set_config( std::string param, std::string value );
   
   //* get a photo_camera parameter
-  bool photo_camera_get_config( std::string, char **value);
+  bool photo_camera_get_config( std::string, char** value);
   
   //* capture an image
-  int photo_camera_capture( photo_image image );
+  bool photo_camera_capture( photo_image* image );
   
   //* capture an image to file
   bool photo_camera_capture_to_file( std::string filename );
 
 
-  static void context_error_reporter( GPContext* context, const char* format, va_list args, void* data );
-  static void context_status_reporter( GPContext* context, const char* format, va_list args, void* data );
-  static void photo_camera_error_reporter( std::string function_name );
-  static void photo_camera_error_reporter( std::string function_name, std::string additional_message );
 
-  static int photo_camera_find_widget_by_name( std::string param, CameraWidget **child, CameraWidget **rootconfig );
+  int photo_camera_find_widget_by_name( std::string param, CameraWidget **child, CameraWidget **rootconfig );
 
 private:
   bool photo_camera_check_toggle_value( std::string value_in, bool* value_out );
 };
+
 
 
 #endif //__PHOTO_CAMERA__

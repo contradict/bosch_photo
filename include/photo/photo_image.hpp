@@ -52,12 +52,6 @@ public:
   photo_image( void );
   ~photo_image( void );
 
-  //* initializes a photo image
-  //photo_image_p photo_image_initialize();
-
-  //* frees a photo image
-  //void photo_image_free(photo_image_p image);
-
   //* sets size and allocates memory for image data
   void photo_image_set_size( int image_width, int image_height, size_t image_bytes_per_pixel );
 

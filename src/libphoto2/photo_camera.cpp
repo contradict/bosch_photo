@@ -34,6 +34,9 @@
  *
  *********************************************************************/
 
+#include <cstdio>  // sscanf, printf, etc.
+#include <fcntl.h> // C file I/O
+#include <cstdlib>
 #include <cstring>
 
 #include "photo/photo_reporter.hpp"
@@ -57,7 +60,6 @@ photo_camera::~photo_camera( void )
 }
 
 
-
 GPContext* photo_camera::photo_camera_create_context( void )
 {
   GPContext* context;
@@ -67,13 +69,11 @@ GPContext* photo_camera::photo_camera_create_context( void )
   // Optional debugging and status output
   gp_context_set_error_func( context, photo_reporter::contextError, NULL );
   gp_context_set_status_func( context, photo_reporter::contextStatus, NULL );
-
   return context;
 }
 
 
-
-bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string model_name, const std::string port_name, GPPortInfoList* port_info_list, )
+bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string model_name, const std::string port_name )
 {
   // Create a context
   context_ = photo_camera_create_context();
@@ -89,7 +89,7 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string
   if( list->lookupAbilities( model_name, &abilities_ ) == true )
   {
     // Set the camera's abilities
-    if( gp_camera_set_abilities( *camera_, abilities_ ) != GP_OK )
+    if( gp_camera_set_abilities( camera_, abilities_ ) != GP_OK )
     {
       photo_reporter::error( "gp_camera_set_abilities()" );
       return false;
@@ -103,7 +103,7 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string
   // Associate camera with port
   if( list->lookupPortInfo( port_name, &port_info_ ) == true )
   {
-    if( gp_camera_set_port_info( *camera_, port_info_ ) != GP_OK )
+    if( gp_camera_set_port_info( camera_, port_info_ ) != GP_OK )
     {
       photo_reporter::error( "gp_camera_set_port_info()" );
       return false;
@@ -127,7 +127,7 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, size_t n )
   gp_list_get_name( list->getCameraList(), n, &name);
   gp_list_get_value( list->getCameraList(), n, &value);
  
-  if( photo_camera_open( name, value, list->getPortInfoList(), list->getAbilitiesList() ) == false )
+  if( photo_camera_open( list, name, value ) == false )
   {
     photo_reporter::error( "photo_camera_open()" );
     return false;
@@ -149,7 +149,7 @@ bool photo_camera::photo_camera_close( void )
 
 
 
-static int photo_camera::photo_camera_find_widget_by_name( std::string name, CameraWidget **child, CameraWidget **root)
+int photo_camera::photo_camera_find_widget_by_name( std::string name, CameraWidget **child, CameraWidget **root)
  {
   int error_code;
 
@@ -180,7 +180,7 @@ static int photo_camera::photo_camera_find_widget_by_name( std::string name, Cam
   {
     found_index = name.rfind( '/' );
 
-    if( found_index == string::npos ) // No subname, we already failed this search above
+    if( found_index == std::string::npos ) // No subname, we already failed this search above
     {
       gp_context_error( context_,"%s not found in configuration tree.", name.c_str() );
       gp_widget_free( *root );
@@ -257,7 +257,7 @@ bool photo_camera::photo_camera_check_toggle_value( std::string value_in, bool* 
 
 
 
-bool photo_camera::photo_camera_photo_set_config( std::string param, const std::string value )
+bool photo_camera::photo_camera_set_config( std::string param, std::string value )
 {
   CameraWidget *root, *child;
   int error_code;
@@ -348,33 +348,35 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
     break;
   
   case GP_WIDGET_DATE: // int
-    int t = -1;
+  {
+    int time = -1;
 #ifdef HAVE_STRPTIME
     struct tm xtm;
     
     if( strptime( value.c_str(), "%c", &xtm ) || strptime( value.c_str(), "%Ec", &xtm ) )
     {
-      t = mktime( &xtm );
+      time = mktime( &xtm );
     }
 #endif
-    if( t == -1 )
+    if( time == -1 )
     {
-      if( !sscanf(value.c_str(), "%d", &t) )
+      if( !sscanf( value.c_str(), "%d", &time ) )
       {
         gp_context_error( context_, "The passed value %s is neither a valid time nor an integer.", value.c_str() );
 	gp_widget_free( root );
 	return false;
       }
     }
-    if( gp_widget_set_value(child, &t) != GP_OK )
+    if( gp_widget_set_value(child, &time) != GP_OK )
     {
       photo_reporter::error( "gp_widget_set_value()" );
-      gp_context_error( context_, "Failed to set new time of date/time widget %s to %s.", param.c_str(), value.c_str());
+      gp_context_error( context_, "Failed to set new time of date/time widget %s to %s.", param.c_str(), value.c_str() );
       gp_widget_free( root );
       return false;
     }
     break;
-  
+  }
+
   case GP_WIDGET_MENU:
   case GP_WIDGET_RADIO: // char*
     int count, i;
@@ -445,10 +447,9 @@ bool photo_camera::photo_camera_photo_set_config( std::string param, const std::
 
 
 
-bool photo_get_config( std::string param, char **value)
+bool photo_camera::photo_camera_get_config( std::string param, char** value )
 {
   CameraWidget *root, *child;
-  int error_code;
   const char *label;
   CameraWidgetType type;
 
@@ -500,6 +501,7 @@ bool photo_get_config( std::string param, char **value)
     break;
 
   case GP_WIDGET_TOGGLE: // int
+  {
     int t;
     if( gp_widget_get_value( child, &t ) != GP_OK )
     {
@@ -507,8 +509,10 @@ bool photo_get_config( std::string param, char **value)
     }
     sprintf( *value, "%d", t );
     break;
+  }
 
   case GP_WIDGET_DATE: // int
+  {
     int error_code, t;
     time_t working_time;
     struct tm *localtm;
@@ -524,6 +528,7 @@ bool photo_get_config( std::string param, char **value)
     error_code = strftime( timebuf, sizeof(timebuf), "%c", localtm );
     sprintf( *value, "%s", timebuf );
     break;
+  }
 
   case GP_WIDGET_MENU:
   case GP_WIDGET_RADIO: //char*
@@ -599,12 +604,12 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
 }
 
 
-bool photo_camera::photo_camera_capture( photo_image image )
+bool photo_camera::photo_camera_capture( photo_image* image )
 {
   int fd, error_code;
   CameraFile *photofile;
   CameraFilePath photo_file_path;
-  char  tmpname[20];
+  char tmpname[20];
 
   // NOP: This gets overridden in the library to /capt0000.jpg
   strcpy( photo_file_path.folder, "/" );
@@ -651,10 +656,10 @@ bool photo_camera::photo_camera_capture( photo_image image )
     photo_reporter::error( "gp_camera_file_delete()" );
     gp_context_error( context_, "Could delete file %s%s  (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
     gp_file_free( photofile );
-    return false
+    return false;
   }
 
-  if( photo_image_read( image, tmpname ) )
+  if( image->photo_image_read( tmpname ) )
   {
     gp_file_free(photofile);
     unlink(tmpname);

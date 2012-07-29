@@ -62,7 +62,7 @@ void photo_image::photo_image_set_size( int image_width, int image_height, size_
   bytes_per_pixel_ = image_bytes_per_pixel;
   image_size_ = width_ * height_ * bytes_per_pixel_;
   
-  data_ = new uint8_t[image_size_](); // create array and initialize to default value: 0
+  data_ = new char[image_size_](); // create array and initialize to default value: 0
 }
 
 //* reads an image from filesystem
@@ -82,7 +82,7 @@ bool photo_image::photo_image_read( const std::string filename )
 
   // TODO: get bytes per pixel from OpenCV
   int d = img.depth(); // bytes per channel?
-  int chan = image.channels(); // number of data channels, ex: 3 for RGB
+  int chan = img.channels(); // number of data channels, ex: 3 for RGB
  
 
   // Store image in photo_image
@@ -112,7 +112,7 @@ bool photo_image::photo_image_read( const std::string filename )
 }
 
 //* writes an image to filesystem
-int photo_image::photo_image_write( const std::string filename )
+bool photo_image::photo_image_write( const std::string filename )
 {
   int r, c;
 
@@ -124,9 +124,9 @@ int photo_image::photo_image_write( const std::string filename )
   {
     for( c = 0; c < width_; ++c )
     {
-      img.at<unsigned char> (r, 3*c+2) = data[n++]; // Red
-      img.at<unsigned char> (r, 3*c+1) = data[n++]; // Green
-      img.at<unsigned char> (r, 3*c+0) = data[n++]; // Blue
+      img.at<unsigned char> (r, 3*c+2) = data_[n++]; // Red
+      img.at<unsigned char> (r, 3*c+1) = data_[n++]; // Green
+      img.at<unsigned char> (r, 3*c+0) = data_[n++]; // Blue
     }
   }
   cv::imwrite( filename.c_str(), img );
