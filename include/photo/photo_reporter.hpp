@@ -40,17 +40,17 @@
 #include <iostream>
 #include <gphoto2/gphoto2-context.h>
 
-class photo_reporter
+namespace photo_reporter
 {
-private:
-  photo_reporter();
-  ~photo_reporter();
-
-public:
-  static void contextError( GPContext* context, const char* format, va_list args, void* data );
-  static void contextStatus( GPContext* context, const char* format, va_list args, void* data );
-  static void error( std::string function_name );
-  static void error( std::string function_name, std::string additional_message );
+//private:
+//  photo_reporter();
+//  ~photo_reporter();
+//
+//public:
+  void contextError( GPContext* context, const char* format, va_list args, void* data );
+  void contextStatus( GPContext* context, const char* format, va_list args, void* data );
+  void error( std::string function_name );
+  void error( std::string function_name, std::string additional_message );
 
 };
 

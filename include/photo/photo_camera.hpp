@@ -71,7 +71,7 @@ public:
 
 
   //* Open the 'n'th photo_camera in the list
-  bool photo_camera_open( photo_camera_list* list, size_t n );
+  bool photo_camera_open( photo_camera_list* list, int n );
 
   //* Open a connection the photo_camera of 'model' on port 'port'.
   bool photo_camera_open( photo_camera_list* list, const std::string model_name, std::string port_name );

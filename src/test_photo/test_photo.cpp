@@ -76,7 +76,7 @@ int main(int argc, char **argv)
   photo::SetConfig srv;
   srv.request.param = "exptime";
   srv.request.value = "20";
-  if(!client.call(srv))
+  if( !client.call(srv) )
   {
     ROS_FATAL("Could not query set_config service");
   }

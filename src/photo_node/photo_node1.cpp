@@ -33,31 +33,22 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *********************************************************************/
-
-// ROS Headers
 #include <ros/ros.h>
+#include <sensor_msgs/fill_image.h>
+#include <photo/photo.h>
 #include <self_test/self_test.h>
 
-// ROS Messages
-#include <sensor_msgs/fill_image.h>
-
-// ROS Services
 #include <photo/GetConfig.h>
 #include <photo/SetConfig.h>
 #include <photo/Capture.h>
 
-// photo library headers
-#include "photo/photo_camera_list.hpp"
-#include "photo/photo_camera.hpp"
-#include "photo/photo_image.hpp"
-
-
 class PhotoNode
 {
 public:
-  photo_camera_list camera_list_;
-  photo_camera camera_;
-  photo_image image_;
+  photo_p photo_;
+  photo_image_p photo_image_;
+
+  //photo_camera camera_;
 
   boost::mutex photo_mutex_ ;
 
@@ -65,84 +56,64 @@ public:
   ros::ServiceServer get_config_srv_;
   ros::ServiceServer capture_srv_;
 
-  PhotoNode() :
-    camera_list_(),
-    camera_(),
-    image_()
+  PhotoNode() : photo_(NULL), photo_image_(NULL)
   {
-    
-    ros::NodeHandle private_nh("~");
-    GPContext* private_context;
-
     // initialize camera
+    photo_image_ = photo_image_initialize();
+    photo_ = photo_initialize();
 
-    // create context
-    private_context = camera_.photo_camera_create_context();
+    ros::NodeHandle private_nh("~");
 
-    // autodetect all cameras connected
-    if( camera_list_.autodetect( private_context ) == false )
-    {
-      ROS_FATAL( "photo_node: Autodetection of cameras failed." );
-      gp_context_unref( private_context );
+    // autodetect a digital camera
+    if(!photo_autodetect(photo_)) {
+      ROS_FATAL("Error: could not open connection to photo.\n");
       private_nh.shutdown();
       return;
     }
 
-    // open camera from camera list
-    if( camera_.photo_camera_open( &camera_list_, 0 ) == false )
-    {
-      ROS_FATAL( "photo_node: Could not open camera %d.", 0 );
-      gp_context_unref( private_context );
-      private_nh.shutdown();
-      return;
-    }
-    
     // ***** Start Services *****
     set_config_srv_ = private_nh.advertiseService("set_config", &PhotoNode::setConfig, this);
     get_config_srv_ = private_nh.advertiseService("get_config", &PhotoNode::getConfig, this);
     capture_srv_ = private_nh.advertiseService("capture", &PhotoNode::capture, this);
   }
 
-  ~PhotoNode()
+  virtual ~PhotoNode()
   {
     // shutdown camera
-    camera_.photo_camera_close();
+    photo_close(photo_);
+    photo_free(photo_);
   }
 
-  bool setConfig( photo::SetConfig::Request& req, photo::SetConfig::Response& resp )
+  bool setConfig(photo::SetConfig::Request& req, photo::SetConfig::Response& resp)
   {
     photo_mutex_.lock();
-    bool error_code = camera_.photo_camera_set_config( req.param, req.value );
+    bool ret = photo_set_config(photo_,req.param.c_str(),req.value.c_str());
     photo_mutex_.unlock();
-    return error_code;
+    return ret;
   }
 
-  bool getConfig( photo::GetConfig::Request& req, photo::GetConfig::Response& resp )
+  bool getConfig(photo::GetConfig::Request& req, photo::GetConfig::Response& resp)
   {
     char* value = new char[255];
     photo_mutex_.lock();
-    bool error_code = camera_.photo_camera_get_config( req.param, &value );
-    if( error_code )
-    {
-      resp.value = value;
-    }
+    bool ret = photo_get_config(photo_,req.param.c_str(),&value);
+    if(ret) resp.value = value;
     photo_mutex_.unlock();
     delete value;
-    return error_code;
+    return ret;
   }
 
-  bool capture( photo::Capture::Request& req, photo::Capture::Response& resp )
+  bool capture(photo::Capture::Request& req, photo::Capture::Response& resp)
   {
     // capture a camera image
     photo_mutex_.lock();
-    bool error_code = camera_.photo_camera_capture( &image_ );
-    if( error_code )
-    {
+    bool ret = photo_capture(photo_, photo_image_);
+    if(ret) {
       // fill image message
-      fillImage( resp.image, "rgb8", image_.getHeight(), image_.getWidth(), image_.getBytesPerPixel() * image_.getWidth(), image_.getDataAddress() );
+      fillImage(resp.image, "rgb8", photo_image_->height, photo_image_->width, 3 * photo_image_->width, photo_image_->data);
     }
     photo_mutex_.unlock();
-    return error_code;
+    return ret;
   }
 };
 

@@ -62,21 +62,22 @@ photo_camera::~photo_camera( void )
 
 GPContext* photo_camera::photo_camera_create_context( void )
 {
-  GPContext* context;
-
-  context = gp_context_new();
+  context_ = gp_context_new();
 
   // Optional debugging and status output
-  gp_context_set_error_func( context, photo_reporter::contextError, NULL );
-  gp_context_set_status_func( context, photo_reporter::contextStatus, NULL );
-  return context;
+  gp_context_set_error_func( context_, photo_reporter::contextError, NULL );
+  gp_context_set_status_func( context_, photo_reporter::contextStatus, NULL );
+  return context_;
 }
 
 
 bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string model_name, const std::string port_name )
 {
-  // Create a context
-  context_ = photo_camera_create_context();
+  // Create a context if necessary
+  if( context_ == NULL )
+  {
+    context_ = photo_camera_create_context();
+  }
 
   // Create new camera
   if( gp_camera_new( &camera_ ) != GP_OK )
@@ -86,6 +87,7 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string
   }
 
   // Find and set camera abilities based on model
+  //std::cout << "Model name: " << model_name << " == " << std::endl;
   if( list->lookupAbilities( model_name, &abilities_ ) == true )
   {
     // Set the camera's abilities
@@ -120,13 +122,15 @@ bool photo_camera::photo_camera_open( photo_camera_list* list, const std::string
 
 
 
-bool photo_camera::photo_camera_open( photo_camera_list* list, size_t n )
+bool photo_camera::photo_camera_open( photo_camera_list* list, int n )
 {
   const char *name, *value; 
 
   gp_list_get_name( list->getCameraList(), n, &name);
   gp_list_get_value( list->getCameraList(), n, &value);
  
+  std::cout << "Opening camera " << n << " by name (" << name << ") and value (" << value << ")" << std::endl;
+
   if( photo_camera_open( list, name, value ) == false )
   {
     photo_reporter::error( "photo_camera_open()" );
@@ -556,7 +560,7 @@ bool photo_camera::photo_camera_get_config( std::string param, char** value )
 bool photo_camera::photo_camera_capture_to_file( std::string filename )
 {
   int fd, error_code;
-  CameraFile *photofile;
+  CameraFile *photo_file;
   CameraFilePath photo_file_path;
 
   // NOP: This gets overridden in the library to /capt0000.jpg
@@ -572,21 +576,21 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
   }
 
   fd = open( filename.c_str(), O_CREAT|O_WRONLY, 0644 );
-  error_code = gp_file_new_from_fd( &photofile, fd );
+  error_code = gp_file_new_from_fd( &photo_file, fd );
   if( error_code < GP_OK )
   {
     photo_reporter::error( "gp_file_new_from_fd()" );
     gp_context_error( context_, "Could not create a new image file from %s%s (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
-    gp_file_free( photofile );
+    gp_file_free( photo_file );
     return false;
   }
 
-  error_code = gp_camera_file_get( camera_, photo_file_path.folder, photo_file_path.name, GP_FILE_TYPE_NORMAL, photofile, context_ );
+  error_code = gp_camera_file_get( camera_, photo_file_path.folder, photo_file_path.name, GP_FILE_TYPE_NORMAL, photo_file, context_ );
   if( error_code < GP_OK )
   {
     photo_reporter::error( "gp_camera_file_get()" );
     gp_context_error( context_, "Could not get file %s%s (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
-    gp_file_free( photofile );
+    gp_file_free( photo_file );
     return false;
   }
 
@@ -595,11 +599,11 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
   {
     photo_reporter::error( "gp_camera_file_delete()" );
     gp_context_error( context_, "Could delete file %s%s  (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
-    gp_file_free( photofile );
+    gp_file_free( photo_file );
     return false;
   }
 
-  gp_file_free( photofile );
+  gp_file_free( photo_file );
   return true;
 }
 
@@ -607,9 +611,9 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
 bool photo_camera::photo_camera_capture( photo_image* image )
 {
   int fd, error_code;
-  CameraFile *photofile;
+  CameraFile *photo_file;
   CameraFilePath photo_file_path;
-  char tmpname[20];
+  char temp_file_name[20];
 
   // NOP: This gets overridden in the library to /capt0000.jpg
   strcpy( photo_file_path.folder, "/" );
@@ -624,50 +628,54 @@ bool photo_camera::photo_camera_capture( photo_image* image )
   }
 
   // create temporary file
-  strcpy( tmpname, "tmpfileXXXXXX" );
-  fd = mkstemp( tmpname );
-  error_code = gp_file_new_from_fd( &photofile, fd );
+  strcpy( temp_file_name, "tmpfileXXXXXX" );
+  fd = mkstemp( temp_file_name );
+  error_code = gp_file_new_from_fd( &photo_file, fd );
   if( error_code < GP_OK )
   {
     close( fd );
-    unlink( tmpname );
+    unlink( temp_file_name );
 
     photo_reporter::error( "gp_file_new_from_fd()" );
     gp_context_error( context_, "Could not create a new image file from %s%s (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
-    gp_file_free( photofile );
+    gp_file_free( photo_file );
     return false;
   }
 
-  // get image from camera
-  error_code = gp_camera_file_get( camera_, photo_file_path.folder, photo_file_path.name, GP_FILE_TYPE_NORMAL, photofile, context_ );
+  // get image from camera and store in temporary file
+  error_code = gp_camera_file_get( camera_, photo_file_path.folder, photo_file_path.name, GP_FILE_TYPE_NORMAL, photo_file, context_ );
   if( error_code < GP_OK )
   {
-    gp_file_unref( photofile );
-    unlink( tmpname );
+    gp_file_unref( photo_file );
+    unlink( temp_file_name );
     photo_reporter::error( "gp_camera_file_get()" );
     gp_context_error( context_, "Could not get file %s%s (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
     return false;
   }
 
+  // delete image from camera's memory
   error_code = gp_camera_file_delete( camera_, photo_file_path.folder, photo_file_path.name, context_ );
   if( error_code < GP_OK )
   {
-    unlink( tmpname );
+    unlink( temp_file_name );
     photo_reporter::error( "gp_camera_file_delete()" );
     gp_context_error( context_, "Could delete file %s%s  (error code %d)\n", photo_file_path.folder, photo_file_path.name, error_code );
-    gp_file_free( photofile );
+    gp_file_free( photo_file );
     return false;
   }
 
-  if( image->photo_image_read( tmpname ) )
+  // load image from temporary file
+  if( image->photo_image_read( std::string(temp_file_name) ) == true )
   {
-    gp_file_free(photofile);
-    unlink(tmpname);
+    gp_file_free( photo_file );
+    unlink( temp_file_name );
     return true;
   }
-    gp_file_free(photofile);
-    unlink(tmpname);
-    return false;
+
+  photo_reporter::error( "photo_image_read()" );
+  gp_file_free( photo_file );
+  unlink( temp_file_name );
+  return false;
 }
 
 

@@ -264,9 +264,6 @@ bool photo_camera_list::filterCameraList( GPContext* context, const std::string 
     gp_list_get_name( working_list, i, &name );
     gp_list_get_value( working_list, i, &value );
 
-    // debugging info:
-    std::cout << "Entry " << i << ": " << name << " " << value <<std::endl;
-
     if( match_string.compare( value ) != 0 )
     {
       gp_list_append( camera_list_, name, value );

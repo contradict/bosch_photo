@@ -34,16 +34,18 @@
  *
  *********************************************************************/
 
+#include <cstdio>
 
-photo_reporter::photo_reporter( void )
-{
-}
-photo_reporter::~photo_reporter( void )
-{
-}
+#include "photo/photo_reporter.hpp"
 
+//photo_reporter::photo_reporter( void )
+//{
+//}
+//photo_reporter::~photo_reporter( void )
+//{
+//}
 
-static void photo_reporter::contextError( GPContext *context, const char *format, va_list args, void *data )
+void photo_reporter::contextError( GPContext *context, const char *format, va_list args, void *data )
 {
   char error_string[1024]; // Maximum size of error message.
 
@@ -54,7 +56,7 @@ static void photo_reporter::contextError( GPContext *context, const char *format
 	    << error_string << std::endl;
 }
 
-static void photo_reporter::contextStatus( GPContext *context, const char *format, va_list args, void *data )
+void photo_reporter::contextStatus( GPContext *context, const char *format, va_list args, void *data )
 {
   char status_string[1024]; // Maximum size of status message.
 
@@ -64,13 +66,15 @@ static void photo_reporter::contextStatus( GPContext *context, const char *forma
   std::cout << "photo_reporter: Status " << status_string << std::endl;
 }
 
-static void photo_reporter::error( std::string function_name )
+void photo_reporter::error( std::string function_name )
 {
-  std::cerr << "photo_reporter: Error executing function '" << function name << "'." << std::endl;
+  std::cerr << "photo_reporter: Error executing function '" << function_name << "'." << std::endl;
 }
 
-static void photo_reporter::error( std::string function_name, std::string additional_message )
+void photo_reporter::error( std::string function_name, std::string additional_message )
 {
-  photo_reporter_error_reporter( function_name );
+  error( function_name );
   std::cerr << additional_message << std::endl;
 }
+
+

@@ -35,6 +35,9 @@
  *********************************************************************/
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
+#include <iostream>
+
 #include <photo/photo_image.hpp>
 
 photo_image::photo_image( void ) :
@@ -52,6 +55,31 @@ photo_image::~photo_image( void )
 }
 
 
+int photo_image::getWidth( void )
+{
+  return width_;
+}
+
+int photo_image::getHeight( void )
+{
+  return height_;
+}
+
+size_t photo_image::getBytesPerPixel( void )
+{
+  return bytes_per_pixel_;
+}
+
+size_t photo_image::getImageSize( void )
+{
+  return image_size_;
+}
+
+char* photo_image::getDataAddress( void )
+{
+  return data_;
+}
+
 //* sets size and allocates memory for image data
 void photo_image::photo_image_set_size( int image_width, int image_height, size_t image_bytes_per_pixel )
 {
@@ -66,29 +94,29 @@ void photo_image::photo_image_set_size( int image_width, int image_height, size_
 }
 
 //* reads an image from filesystem
-bool photo_image::photo_image_read( const std::string filename )
+bool photo_image::photo_image_read( std::string filename )
 {
   int r, c;
-
   // Read image from file using OpenCV
   cv::Mat img = cv::imread( filename.c_str() );
   if( img.empty() )
   {
+    std::cerr << "img.empty() == true" << std::endl;
     return false;
   }
 
   int w = img.cols;
   int h = img.rows;
 
-  // TODO: get bytes per pixel from OpenCV
-  int d = img.depth(); // bytes per channel?
-  int chan = img.channels(); // number of data channels, ex: 3 for RGB
- 
+
+  //int chan = img.channels(); // number of data channels, ex: 3 for RGB
+  int d = img.elemSize(); // bytes per element: 1 element has 'chan' channels of data
 
   // Store image in photo_image
   if( width_ != w || height_ != h )
   {
-    photo_image_set_size( w, h, d*chan );
+    //std::cout << "Setting size to " << w << " x " << h << " x " << d << ".";
+    photo_image_set_size( w, h, d );
   }
 
   size_t n = 0; // counter for iterating over data_
@@ -112,7 +140,7 @@ bool photo_image::photo_image_read( const std::string filename )
 }
 
 //* writes an image to filesystem
-bool photo_image::photo_image_write( const std::string filename )
+bool photo_image::photo_image_write( std::string filename )
 {
   int r, c;
 

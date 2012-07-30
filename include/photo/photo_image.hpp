@@ -52,6 +52,13 @@ public:
   photo_image( void );
   ~photo_image( void );
 
+
+  int getWidth( void );
+  int getHeight( void );
+  size_t getBytesPerPixel( void );
+  size_t getImageSize( void );
+  char* getDataAddress( void );
+
   //* sets size and allocates memory for image data
   void photo_image_set_size( int image_width, int image_height, size_t image_bytes_per_pixel );
 
@@ -60,14 +67,14 @@ public:
    * This function is a debugging function for use replacing photo_image acquisition using a photo_camera.
    * It can only read 24-bit RGB images via OpenCV. It may be extended to handle grayscale and alpha channels in the future.
    */
-  bool photo_image_read( const std::string filename );
+  bool photo_image_read( std::string filename );
 
   //* Write a photo_image to filesystem
   /*
    * This function is a debugging function for use replacing photo_image acquisition using a photo_camera.
    * It can only write 24-bit RGB images via OpenCV. It may be extended to handle grayscale and alpha channels in the future.
    */
-  bool photo_image_write( const std::string filename );
+  bool photo_image_write( std::string filename );
 };
 
 #endif // __PHOTO_IMAGE__
