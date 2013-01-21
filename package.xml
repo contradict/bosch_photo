@@ -1,0 +1,29 @@
+<package>
+    <name>photo</name>
+    <version>0.2.0</version>
+    <description>
+        A generic driver for digital cameras based on gphoto2
+    </description>
+    <author>Benjamin Pitzer</author>
+    <license>BSD</license>
+    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <url>https://github.com/contradict/bosch_photo</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <build_depend>roscpp</build_depend>
+    <build_depend>std_msgs</build_depend>
+    <build_depend>sensor_msgs</build_depend>
+    <build_depend>message_generation</build_depend>
+    <build_depend>message_runtime</build_depend>
+
+    <run_depend>roscpp</run_depend>
+    <run_depend>std_msgs</run_depend>
+    <run_depend>sensor_msgs</run_depend>
+    <run_depend>message_runtime</run_depend>
+
+    <export>
+        <rosdep name="libgphoto2-2-dev"/>
+    </export>
+</package>
+
