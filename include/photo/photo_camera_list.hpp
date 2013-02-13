@@ -37,6 +37,7 @@
 #define __PHOTO_CAMERA_LIST__
 
 #include <string>
+#include <unistd.h>
 
 #include <gphoto2/gphoto2-camera.h>
 #include <gphoto2/gphoto2-setting.h>
