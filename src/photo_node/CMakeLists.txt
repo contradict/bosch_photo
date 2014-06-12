@@ -5,6 +5,7 @@ target_link_libraries(photo_node
     ${Gphoto2_LIBRARIES}
     ${OpenCV_LIBRARIES}
     )
+add_dependencies(photo_node ${PROJECT_NAME}_generate_messages_cpp)
 install(
     TARGETS
         photo_node
