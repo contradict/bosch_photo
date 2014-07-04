@@ -6,6 +6,7 @@ target_link_libraries(photo_node
     ${OpenCV_LIBRARIES}
     )
 add_dependencies(photo_node ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(photo_node ${PROJECT_NAME}_gencfg)
 install(
     TARGETS
         photo_node
