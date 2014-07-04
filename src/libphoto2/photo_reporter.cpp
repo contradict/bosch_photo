@@ -45,25 +45,15 @@
 //{
 //}
 
-void photo_reporter::contextError( GPContext *context, const char *format, va_list args, void *data )
+void photo_reporter::contextError( GPContext *context, const char *text, void *data )
 {
-  char error_string[1024]; // Maximum size of error message.
-
-  vsnprintf( error_string, 1024, format, args );
-  //va_end( args );
-
   std::cerr << std::endl << "photo_reporter: Context error " << std::endl
-	    << error_string << std::endl;
+	    << text << std::endl;
 }
 
-void photo_reporter::contextStatus( GPContext *context, const char *format, va_list args, void *data )
+void photo_reporter::contextStatus( GPContext *context, const char *text, void *data )
 {
-  char status_string[1024]; // Maximum size of status message.
-
-  vsnprintf( status_string, 1024, format, args );
-  //va_end( args );
-
-  std::cout << "photo_reporter: Status " << status_string << std::endl;
+  std::cout << "photo_reporter: Status " << text << std::endl;
 }
 
 void photo_reporter::error( std::string function_name )
