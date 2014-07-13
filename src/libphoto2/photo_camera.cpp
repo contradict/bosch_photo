@@ -639,6 +639,7 @@ bool photo_camera::triggered_camera_capture( photo_image* image, int timeout )
       break;
     case GP_EVENT_FILE_ADDED:
       photo_file_path = (CameraFilePath*)data;
+      printf("File Added %s %s\n", photo_file_path->name, photo_file_path->folder);
       //CameraFileInfo photo_info;
       //ret = gp_camera_file_get_info( camera_, photo_file_path->folder,
       //    photo_file_path->name, &photo_info, context_);
