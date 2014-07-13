@@ -161,7 +161,7 @@ public:
     while (ros::ok())
     {
       photo_mutex_.lock();
-      bool ret = camera_.triggered_camera_capture( &image_, 100 );
+      bool ret = camera_.triggered_camera_capture( &image_, 10000 );
       if ( ret )
       {
         ROS_INFO("Captured");
