@@ -47,8 +47,8 @@ namespace photo_reporter
 //  ~photo_reporter();
 //
 //public:
-  void contextError( GPContext* context, const char* format, va_list args, void* data );
-  void contextStatus( GPContext* context, const char* format, va_list args, void* data );
+  void contextError( GPContext* context, const char* text, void* data );
+  void contextStatus( GPContext* context, const char* text, void* data );
   void error( std::string function_name );
   void error( std::string function_name, std::string additional_message );
 
