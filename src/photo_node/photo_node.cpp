@@ -51,6 +51,8 @@
 #include "photo/photo_camera.hpp"
 #include "photo/photo_image.hpp"
 
+#include "boost/thread.hpp"
+
 
 class PhotoNode
 {
@@ -60,17 +62,20 @@ public:
   photo_image image_;
 
   boost::mutex photo_mutex_ ;
+  boost::thread triggered_thread_;
 
   ros::ServiceServer set_config_srv_;
   ros::ServiceServer get_config_srv_;
   ros::ServiceServer capture_srv_;
+
+  ros::Publisher triggered_capture_;
 
   PhotoNode() :
     camera_list_(),
     camera_(),
     image_()
   {
-    
+
     ros::NodeHandle private_nh("~");
     GPContext* private_context;
 
@@ -96,11 +101,17 @@ public:
       private_nh.shutdown();
       return;
     }
-    
+
     // ***** Start Services *****
     set_config_srv_ = private_nh.advertiseService("set_config", &PhotoNode::setConfig, this);
     get_config_srv_ = private_nh.advertiseService("get_config", &PhotoNode::getConfig, this);
     capture_srv_ = private_nh.advertiseService("capture", &PhotoNode::capture, this);
+
+    // Advertise topic
+    triggered_capture_ = private_nh.advertise<sensor_msgs::Image>("triggered_capture",1);
+
+    triggered_thread_ = boost::thread(boost::bind( &PhotoNode::triggered_capture, this) );
+
   }
 
   ~PhotoNode()
@@ -144,6 +155,23 @@ public:
     photo_mutex_.unlock();
     return error_code;
   }
+
+  void triggered_capture(void)
+  {
+    while (ros::ok())
+    {
+      photo_mutex_.lock();
+      bool ret = camera_.triggered_camera_capture( &image_, 10 );
+      if ( ret )
+      {
+        sensor_msgs::Image img;
+        fillImage( img, "rgb8", image_.getHeight(), image_.getWidth(), image_.getBytesPerPixel() * image_.getWidth(), image_.getDataAddress() );
+        triggered_capture_.publish(img);
+      }
+      photo_mutex_.unlock();
+    }
+  }
+
 };
 
 int main(int argc, char **argv)
