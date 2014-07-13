@@ -164,6 +164,7 @@ public:
       bool ret = camera_.triggered_camera_capture( &image_, 10 );
       if ( ret )
       {
+        ROS_INFO("Captured");
         sensor_msgs::Image img;
         fillImage( img, "rgb8", image_.getHeight(), image_.getWidth(), image_.getBytesPerPixel() * image_.getWidth(), image_.getDataAddress() );
         triggered_capture_.publish(img);
