@@ -116,6 +116,8 @@ public:
 
   ~PhotoNode()
   {
+    triggered_thread_.join();
+
     // shutdown camera
     camera_.photo_camera_close();
   }
