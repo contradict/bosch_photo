@@ -160,10 +160,11 @@ public:
 
   void triggered_capture(void)
   {
-    while (ros::ok())
+    while (!ros::isShuttingDown())
     {
       photo_mutex_.lock();
       bool ret = camera_.triggered_camera_capture( &image_, 100 );
+      photo_mutex_.unlock();
       if ( ret )
       {
         ROS_INFO("Captured");
@@ -171,7 +172,6 @@ public:
         fillImage( img, "rgb8", image_.getHeight(), image_.getWidth(), image_.getBytesPerPixel() * image_.getWidth(), image_.getDataAddress() );
         triggered_capture_.publish(img);
       }
-      photo_mutex_.unlock();
     }
   }
 
