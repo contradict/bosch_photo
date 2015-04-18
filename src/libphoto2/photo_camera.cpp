@@ -607,6 +607,106 @@ bool photo_camera::photo_camera_capture_to_file( std::string filename )
   return true;
 }
 
+// Timeout in milliseconds
+bool photo_camera::triggered_camera_capture( photo_image* image, int timeout )
+{
+  CameraEventType event;
+  void* data = NULL;
+  int ret;
+
+  int fd, error_code;
+  CameraFile *photo_file;
+  CameraFilePath *photo_file_path;
+  char temp_file_name[20];
+
+  ret = gp_camera_wait_for_event( camera_, timeout, &event, &data, context_ );
+  if (ret != GP_OK) {
+    return ret;
+  }
+
+  switch(event) {
+    case GP_EVENT_UNKNOWN:
+      if (data) {
+        printf("Unknown %s \n", (char*)data);
+      } else {
+        printf("Unknown\n");
+      }
+      break;
+    case GP_EVENT_TIMEOUT:
+      break;
+    case GP_EVENT_CAPTURE_COMPLETE:
+      printf("Capture Complete\n");
+      break;
+    case GP_EVENT_FILE_ADDED:
+      photo_file_path = (CameraFilePath*)data;
+      printf("File Added %s %s\n", photo_file_path->name, photo_file_path->folder);
+      //CameraFileInfo photo_info;
+      //ret = gp_camera_file_get_info( camera_, photo_file_path->folder,
+      //    photo_file_path->name, &photo_info, context_);
+      //buf = NULL;
+      //ret = gp_camera_file_read( camera_, photo_file_path->folder,
+      //    photo_file_path->name, GP_FILE_TYPE_NORMAL, 0, buf,
+      //    &photo_info.CameraFileInfoFile.size, context_);
+      //image->width = photo_info.width;
+
+       // create temporary file
+       strcpy( temp_file_name, "tmpfileXXXXXX" );
+       fd = mkstemp( temp_file_name );
+       error_code = gp_file_new_from_fd( &photo_file, fd );
+       if( error_code < GP_OK )
+       {
+         close( fd );
+         unlink( temp_file_name );
+
+         photo_reporter::error( "gp_file_new_from_fd()" );
+         gp_context_error( context_, "Could not create a new image file from %s%s (error code %d)\n", photo_file_path->folder, photo_file_path->name, error_code );
+         gp_file_free( photo_file );
+         return false;
+       }
+
+       // get image from camera and store in temporary file
+       error_code = gp_camera_file_get( camera_, photo_file_path->folder, photo_file_path->name, GP_FILE_TYPE_NORMAL, photo_file, context_ );
+       if( error_code < GP_OK )
+       {
+         gp_file_unref( photo_file );
+         unlink( temp_file_name );
+         photo_reporter::error( "gp_camera_file_get()" );
+         gp_context_error( context_, "Could not get file %s%s (error code %d)\n", photo_file_path->folder, photo_file_path->name, error_code );
+         return false;
+       }
+
+       // delete image from camera's memory
+       error_code = gp_camera_file_delete( camera_, photo_file_path->folder, photo_file_path->name, context_ );
+       if( error_code < GP_OK )
+       {
+         unlink( temp_file_name );
+         photo_reporter::error( "gp_camera_file_delete()" );
+         gp_context_error( context_, "Could delete file %s%s  (error code %d)\n", photo_file_path->folder, photo_file_path->name, error_code );
+         gp_file_free( photo_file );
+         return false;
+       }
+
+       // load image from temporary file
+       if( image->photo_image_read( std::string(temp_file_name) ) == true )
+       {
+         gp_file_free( photo_file );
+         unlink( temp_file_name );
+         return true;
+       }
+
+       photo_reporter::error( "photo_image_read()" );
+       gp_file_free( photo_file );
+       unlink( temp_file_name );
+       return false;
+
+    case GP_EVENT_FOLDER_ADDED:
+      photo_file_path = (CameraFilePath*)data;
+      printf("Folder Added %s %s\n", photo_file_path->name, photo_file_path->folder);
+      break;
+  }
+  return false;
+}
+
 
 bool photo_camera::photo_camera_capture( photo_image* image )
 {

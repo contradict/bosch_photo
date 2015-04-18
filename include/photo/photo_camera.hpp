@@ -96,6 +96,8 @@ public:
 
   int photo_camera_find_widget_by_name( std::string param, CameraWidget **child, CameraWidget **rootconfig );
 
+  bool triggered_camera_capture( photo_image* image, int timeout );
+
 private:
   bool photo_camera_check_toggle_value( std::string value_in, bool* value_out );
 };
