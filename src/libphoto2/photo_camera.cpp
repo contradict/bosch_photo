@@ -621,7 +621,8 @@ bool photo_camera::triggered_camera_capture( photo_image* image, int timeout )
 
   ret = gp_camera_wait_for_event( camera_, timeout, &event, &data, context_ );
   if (ret != GP_OK) {
-    return ret;
+    photo_reporter::error( "gp_camera_wait_for_event()" );
+    return false;
   }
 
   switch(event) {
